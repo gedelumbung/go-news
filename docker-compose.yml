@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+
+  nginx:
+    build: nginx
+    container_name: proxy
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    networks: 
+      - news_network
+
+  app:
+    build: app
+    container_name: app
+    depends_on:
+      - db
+      - elasticsearch
+    expose:
+      - "8080"
+    networks: 
+      - news_network
+
+  db:
+    image: "mysql:5.7"
+    container_name: db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_pwd
+      - MYSQL_DATABASE=db_news
+      - MYSQL_USER=dlmbg
+      - MYSQL_PASSWORD=123456
+    volumes:
+      - ./db/dump.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - news_network
+
+  elasticsearch:
+    container_name: 'elasticsearch'
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:6.2.3'
+    ports:
+      - '9200:9200'
+    networks:
+      - news_network
+
+networks:
+  news_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
