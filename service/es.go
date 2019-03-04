@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"sync"
@@ -32,10 +33,10 @@ const mapping = `
 	}
 }`
 
-var esQueue chan *model.EsNews
+var esNewsQueue chan *model.EsNews
 
 func connectEs() *elastic.Client {
-	client, err := elastic.NewClient(elastic.SetURL("http://127.0.0.1:9200"))
+	client, err := elastic.NewClient(elastic.SetURL(os.Getenv("ES_URL")))
 	if err != nil {
 		panic("Could not connect to the elasticsearch")
 	}
@@ -94,13 +95,13 @@ func GetNewsFromEs(start, limit int) ([]*model.News, error) {
 		wg         sync.WaitGroup
 	)
 	news = []*model.News{}
-	esQueue = make(chan *model.EsNews, 100)
+	esNewsQueue = make(chan *model.EsNews, 100)
 
 	for _, item := range data.Each(reflect.TypeOf(esNewsItem)) {
 		if e, ok := item.(model.EsNews); ok {
 			wg.Add(1)
 			go func(e model.EsNews) {
-				esQueue <- &model.EsNews{
+				esNewsQueue <- &model.EsNews{
 					ID:        e.ID,
 					CreatedAt: e.CreatedAt,
 				}
@@ -109,7 +110,7 @@ func GetNewsFromEs(start, limit int) ([]*model.News, error) {
 	}
 
 	go func() {
-		for e := range esQueue {
+		for e := range esNewsQueue {
 			data, _ := FindNewsByID(e.ID)
 			news = append(news, &data)
 			wg.Done()

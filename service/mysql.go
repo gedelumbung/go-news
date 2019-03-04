@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"errors"
+	"os"
 
 	"github.com/gedelumbung/go-news/model"
 
@@ -15,7 +16,7 @@ var (
 )
 
 func connectDb() *sqlx.DB {
-	db, err := sqlx.Open("mysql", "root:@tcp(127.0.0.1:3306)/db_news")
+	db, err := sqlx.Open("mysql", os.Getenv("MYSQL_URL"))
 	db.SetMaxOpenConns(100)
 	if err != nil {
 		panic("Could not connect to the db")
