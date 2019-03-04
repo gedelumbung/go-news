@@ -5,12 +5,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/gedelumbung/go-news/helper"
+	"github.com/gedelumbung/go-news/model"
 	"github.com/gedelumbung/go-news/params"
 	"github.com/gedelumbung/go-news/service"
 	"github.com/gedelumbung/go-news/worker"
+	cache "github.com/patrickmn/go-cache"
 )
+
+var c = cache.New(5*time.Minute, 10*time.Minute)
 
 func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -34,7 +39,21 @@ func getNews(w http.ResponseWriter, r *http.Request) {
 	}
 	start := page * 10
 
-	data, err := service.GetNewsFromEs(start, 10)
+	var (
+		newsResult []*model.News
+		err        error
+	)
+
+	newsResult = []*model.News{}
+	cacheName := `news_list_` + pageParams
+
+	apiCache, found := c.Get(cacheName)
+	if found {
+		newsResult = apiCache.([]*model.News)
+	} else {
+		newsResult, err = service.GetNewsFromEs(start, 10)
+		c.Set(cacheName, newsResult, cache.DefaultExpiration)
+	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	if err != nil {
@@ -48,13 +67,13 @@ func getNews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sort.Slice(data, func(i int, j int) bool {
-		return data[i].ID > data[j].ID
+	sort.Slice(newsResult, func(i int, j int) bool {
+		return newsResult[i].ID > newsResult[j].ID
 	})
 
 	response, _ := json.Marshal(params.Response{
 		"success",
-		data,
+		newsResult,
 		nil,
 	})
 
@@ -101,6 +120,8 @@ func createNews(w http.ResponseWriter, r *http.Request) {
 		newsParams,
 		nil,
 	})
+
+	c.Flush()
 
 	w.WriteHeader(200)
 	w.Write(response)
