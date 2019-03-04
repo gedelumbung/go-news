@@ -9,10 +9,10 @@ This project use docker to automate all thing (we love docker :D), so please ins
 
 - Clone this repo
 
- `git clone git@github.com:gedelumbung/go-news.git`
+   `git clone git@github.com:gedelumbung/go-news.git`
 
 - Run docker compose
 
- `docker-compose up --build`
+   `docker-compose up --build`
 
-- This project can access from directly from http://localhost:8080/news
+- This project can access directly from http://localhost:8080/news
