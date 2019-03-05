@@ -24,6 +24,6 @@ func CreateNewsWorker(NewsWorker <-chan *params.NewsRequest) {
 		newsEs, _ := service.StoreNewsToEs(newsDb)
 		fmt.Println("worker processing job (MySQL) with #ID : ", newsDb.ID)
 		fmt.Println("worker processing job (ES) with #ID : ", newsEs.ID)
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 1)
 	}
 }
